@@ -7,12 +7,12 @@ Instructions for uploading new data into Oklahoma Watch's state and educational 
 * login credentials for state and OKW servers
 
 ## Environmental variables
-| *`OK_STATE_FTP_HOST`* | State FTP host |
-| *`OK_STATE_FTP_USERNAME`* | State FTP username |
-| *`OK_STATE_FTP_PASSWORD`* | State FTP password |
-| *`OK_WATCH_DATA_HOST`* | OKWD server host |
-| *`OK_WATCH_DATA_USERNAME`* | OKWD server username |
-| *`OK_WATCH_DATA_PASSWORD`* | OKWD server password |
+* *`OK_STATE_FTP_HOST`*: State FTP host
+* *`OK_STATE_FTP_USERNAME`*: State FTP username
+* *`OK_STATE_FTP_PASSWORD`*: State FTP password
+* *`OK_WATCH_DATA_HOST`*: OKWD server host
+* *`OK_WATCH_DATA_USERNAME`*: OKWD server username
+* *`OK_WATCH_DATA_PASSWORD`*: OKWD server password
 
 ## Setup
 Set your environmental variables and clone this repo. Then:
