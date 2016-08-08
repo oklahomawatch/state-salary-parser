@@ -6,6 +6,17 @@ __pycache__/
 # C extensions
 *.so
 
+# raw data files
+raw_data
+
+# parsed data files
+edu-parsed-payroll-data.txt
+edu-ready-to-upload.txt
+state-parsed-payroll-data.txt
+state-ready-to-upload.txt
+missing-payroll-codes.txt
+missing-agency-codes.txt
+
 # Distribution / packaging
 .Python
 env/
