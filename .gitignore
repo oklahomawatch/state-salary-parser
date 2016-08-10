@@ -11,9 +11,11 @@ raw_data
 
 # parsed data files
 edu-parsed-payroll-data.txt
-edu-ready-to-upload.txt
+edu-personnel-ready-to-upload.txt
+edu-agencies-ready-to-upload.txt
 state-parsed-payroll-data.txt
-state-ready-to-upload.txt
+state-personnel-ready-to-upload.txt
+state-agencies-ready-to-upload.txt
 missing-payroll-codes.txt
 missing-agency-codes.txt
 

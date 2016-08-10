@@ -4,8 +4,6 @@ import csv
 from datetime import date
 from ftplib import FTP
 
-from fabric.api import *
-from fabric.operations import *
 from fabric.state import output as fab_output
 
 import pandas as pd
@@ -43,9 +41,9 @@ class PayrollRecord(object):
         # divide by 100 to get actual payment amount
         # per instructions from state data folk
         self.amount = float(int(row[141:150].strip())) / 100
-        
+
         # TODO: add assertions to validate data
-        
+
     # method to get full name
     def full_name(self):
         name = "{} {} {}".format(
@@ -73,7 +71,8 @@ class PayrollRecord(object):
 
     # does this person work in higher ed?
     def is_education_employee(self):
-        return str(self.agency_id) in EDU_AGENCIES
+        return (str(self.agency_id) in EDU_AGENCIES or
+                self.job_title.upper() == "HIGHER ED POSITION")
 
     # method to build a slug
     def slug(self):
@@ -90,19 +89,19 @@ class PayrollRecord(object):
                 self.full_name()
             )
             return slugify(slugstring, to_lower=True)
-        
+
     def __str__(self):
         return self.full_name()
-        
-        
+
+
 def download_payroll_data():
     """Download payroll and lookup files."""
-    
+
     # connect to the FTP server
     ftp = FTP(environ['OK_STATE_FTP_HOST'],
               environ['OK_STATE_FTP_USERNAME'],
               environ['OK_STATE_FTP_PASSWORD'])
-    
+
     # get a list of the files
     files = ftp.nlst()
 
@@ -116,7 +115,7 @@ def download_payroll_data():
     ])
 
     pattern = re.compile("CALP" + target_years_regex + "\d{2}.DAT")
-    payroll_files = [x.group(0) for q in files for x in [pattern.search(q)] if x]
+    payroll_files = [x.group(0) for q in files for x in [pattern.search(q)] if x]  # NOQA
 
     # loop over that list, downloading each file
     # ... checking first to see if it already exists
@@ -143,7 +142,7 @@ def in_fiscal_year(date_obj):
     fiscal_end = date(FIRST_FISCAL_YEAR+1, 6, 30)
 
     return fiscal_start <= date_obj <= fiscal_end
-        
+
 
 def get_date_obj(d):
     """Return a date object from a payroll record date string."""
@@ -159,61 +158,52 @@ def get_date_obj(d):
 
 def get_unique_ids(data_file, extra_var, slice_num):
     """Return a unique list of agency or payroll codes."""
-        
+
     # Start with a list of codes
     # that have appeared in previous data sets but not
     # in the master file
     codes = extra_var
-    
+
     # Then loop over the master file
     with open(data_file, "rb") as d:
         data = d.readlines()
         for row in data:
-            d = {}
             code = str(row[:slice_num])
             name = row[slice_num:].strip()
-            
+
             # a little name cleanup
             for item in GARBAGE_STRINGS:
                 name = name.replace(*item)
-
-            d['id'] = code
-            d['name'] = name
-            if not d in codes:
-                codes.append(d)
+            codes[code] = name
 
     return codes
 
 
 def parse_payroll_data():
     """Parse payroll files."""
-    
+
     # get a list of agency codes
     agency_codes = get_unique_ids(
         "raw_data/agency_list.DAT",
         EXTRA_EDU_AGENCIES,
         3
-    )
-    
-    agency_codes = [x["id"] for x in agency_codes]
+    ).keys()
 
     # get a list of payroll codes
     payroll_codes = get_unique_ids(
         "raw_data/paycode_list.DAT",
         EXTRA_PAYROLL_CODES,
         4
-    )
+    ).keys()
 
-    payroll_codes = [x["id"] for x in payroll_codes]
-
-    # create lists to hold missing values
+    # create lists to hold any missing values
     missing_agency_codes = []
     missing_payroll_codes = []
 
-    # open output files        
+    # open output files
     with open("state-parsed-payroll-data.txt", "wb") as state_parsed, \
-         open("edu-parsed-payroll-data.txt", "wb") as edu_parsed:
-        
+            open("edu-parsed-payroll-data.txt", "wb") as edu_parsed:
+
         # define the field names
         fieldnames = [
             'agency_id',
@@ -226,21 +216,21 @@ def parse_payroll_data():
             'pay_code',
             'name_slug'
         ]
-        
+
         # create dictwriters
         state_writer = csv.DictWriter(state_parsed, fieldnames=fieldnames)
         edu_writer = csv.DictWriter(edu_parsed, fieldnames=fieldnames)
-        
+
         # write the headers
         state_writer.writeheader()
         edu_writer.writeheader()
-        
+
         # target the payroll files
-        payroll_files = ["raw_data/" + x for x in listdir('raw_data') if re.search(r'^CALP\d{4}\.DAT$', x)]
+        payroll_files = ["raw_data/" + x for x in listdir('raw_data') if re.search(r'^CALP\d{4}\.DAT$', x)]  # NOQA
 
         # raise an exception if there are no files to parse
         if len(payroll_files) == 0:
-            raise IndexError("ain't no data files to whang on, so")
+            raise IndexError("ain't no data to whang on, so")
 
         # otherwise, loop over the files
         for payroll_file in payroll_files:
@@ -251,14 +241,14 @@ def parse_payroll_data():
                 for row in data:
                     # create an instance of PayrollRecord class
                     pay_record = PayrollRecord(row)
-                    
+
                     # only proceed if the amount is > 0
                     # and the payment date is in the target fiscal year
                     # and the last name isn't blank
                     if (pay_record.amount > 0.00 and
                             in_fiscal_year(pay_record.payment_date) and
                             pay_record.last_name != ""):
-                        
+
                         # if the agency code isn't in the master list,
                         # add to the list of missing codes
                         if pay_record.agency_id not in agency_codes:
@@ -267,7 +257,7 @@ def parse_payroll_data():
                         # ditto for payroll codes
                         if pay_record.pay_code not in payroll_codes:
                             missing_payroll_codes.append(pay_record.pay_code)
-                            
+
                         record_to_write = {
                             'agency_id': pay_record.agency_id,
                             'last': pay_record.last_name,
@@ -279,7 +269,7 @@ def parse_payroll_data():
                             'pay_code': pay_record.pay_code,
                             'name_slug': pay_record.slug()
                         }
-                    
+
                         # write to output files
                         if pay_record.is_education_employee():
                             edu_writer.writerow(record_to_write)
@@ -301,9 +291,25 @@ def parse_payroll_data():
 
 def aggregate_payroll_data():
     """Roll through master salary files, group & aggregate."""
-    
-    state_out = open("state-ready-to-upload.txt", "wb")
-    edu_out = open("edu-ready-to-upload.txt", "wb")
+
+    state_out = open("state-personnel-ready-to-upload.txt", "wb")
+    edu_out = open("edu-personnel-ready-to-upload.txt", "wb")
+    state_agency_out = open("state-agencies-ready-to-upload.txt", "wb")
+    edu_agency_out = open("edu-agencies-ready-to-upload.txt", "wb")
+
+    # get a list of agency codes
+    agency_codes = get_unique_ids(
+        "raw_data/agency_list.DAT",
+        EXTRA_EDU_AGENCIES,
+        3
+    )
+
+    # get a list of payroll codes
+    payroll_codes = get_unique_ids(
+        "raw_data/paycode_list.DAT",
+        EXTRA_PAYROLL_CODES,
+        4
+    )
 
     # define the field names
     fieldnames = [
@@ -321,7 +327,7 @@ def aggregate_payroll_data():
         'show_hire_date',
         'a_third_empty_string'
     ]
-    
+
     # create dictwriters
     state_writer = csv.DictWriter(state_out,
                                   fieldnames=fieldnames,
@@ -335,33 +341,34 @@ def aggregate_payroll_data():
                                 quotechar='"',
                                 quoting=csv.QUOTE_NONNUMERIC)
 
-
     # create dataframes from parsed csvs
     # `keep_default_na=False` needed to handle
     # literal names like NULL and NA
     dataframes = {
         "state": pd.read_csv("state-parsed-payroll-data.txt",
-                             dtype={'last': object,
-                                    'rest': object,
-                                    'agency_id': object,
-                                    'pay_code': object,
-                                    'job_code': object
+                             dtype={
+                                'last': object,
+                                'rest': object,
+                                'agency_id': object,
+                                'pay_code': object,
+                                'job_code': object
                              },
                              keep_default_na=False),
 
         "higher-ed": pd.read_csv("edu-parsed-payroll-data.txt",
-                                 dtype={'last': object,
-                                        'rest': object,
-                                        'agency_id': object,
-                                        'pay_code': object,
-                                        'job_code': object
+                                 dtype={
+                                    'last': object,
+                                    'rest': object,
+                                    'agency_id': object,
+                                    'pay_code': object,
+                                    'job_code': object
                                  },
                                  keep_default_na=False),
     }
 
-    # loop over each dataframe    
-    for df in dataframes:    
-        print "working on " + df + " records ..."
+    # loop over each dataframe
+    for df in dataframes:
+        print "working on " + df + " personnel records ..."
 
         # group by name slug
         for k, v in dataframes[df].groupby(['name_slug']):
@@ -376,10 +383,10 @@ def aggregate_payroll_data():
             # get sum of amounts
             total_pay = v['amount'].sum()
 
-            show_hire_date = "0"
+            show_hire_date = "1"
 
-            if df == "state":
-                show_hire_date = "1"
+            if hire_date == "1900-01-01":
+                show_hire_date = "0"
 
             record_to_write = {
                 'empty_str': '',
@@ -401,7 +408,43 @@ def aggregate_payroll_data():
                 state_writer.writerow(record_to_write)
             else:
                 edu_writer.writerow(record_to_write)
-        
+
+        print "working on " + df + " agency records ..."
+
+        agency_file_dict = {}
+        for k, v in dataframes[df].groupby(['agency_id', 'pay_code']):
+            agency_id = k[0]
+            agency = agency_codes.get(agency_id, None)
+            pay_code = k[1]
+            payroll_name = payroll_codes.get(pay_code, None)
+            total_pay = v['amount'].sum()
+            payroll_str = ":".join([payroll_name, str(total_pay)])
+
+            agency_dict = agency_file_dict.get(agency_id, None)
+
+            if agency_dict is not None:
+                agency_file_dict[agency_id]['payroll'].append(payroll_str)
+                agency_file_dict[agency_id]['total'] += total_pay
+            else:
+                agency_file_dict[agency_id] = {}
+                agency_file_dict[agency_id]['name'] = agency
+                agency_file_dict[agency_id]['total'] = 0.0
+                agency_file_dict[agency_id]['payroll'] = []
+
+        for agency in agency_file_dict:
+            outlist = [
+                agency,
+                agency_file_dict[agency]['name'],
+                str(agency_file_dict[agency]['total']),
+                "|".join(agency_file_dict[agency]['payroll'])
+            ]
+
+            if df == "state":
+                state_agency_out.write("~".join(outlist) + "\n")
+            else:
+                edu_agency_out.write("~".join(outlist) + "\n")
+
     state_out.close()
     edu_out.close()
-
+    state_agency_out.close()
+    edu_agency_out.close()
