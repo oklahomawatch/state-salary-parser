@@ -10,7 +10,7 @@ import pandas as pd
 
 from slugify import slugify
 
-from lookups import (EDU_AGENCIES, GARBAGE_STRINGS,
+from lookups import (EDU_AGENCIES, GARBAGE_STRINGS, EDU_TITLES,
                      EXTRA_EDU_AGENCIES, EXTRA_PAYROLL_CODES)
 
 
@@ -72,7 +72,7 @@ class PayrollRecord(object):
     # does this person work in higher ed?
     def is_education_employee(self):
         return (str(self.agency_id) in EDU_AGENCIES or
-                self.job_title.upper() == "HIGHER ED POSITION")
+                self.job_title.upper() in EDU_TITLES)
 
     # method to build a slug
     def slug(self):
