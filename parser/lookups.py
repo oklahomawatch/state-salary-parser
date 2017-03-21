@@ -1,3 +1,8 @@
+# set this numeric variable as the first year of the
+# fiscal year you're targeting - e.g., "2015" for
+# FY15-16 ending June 30, 2016
+FIRST_FISCAL_YEAR = 2015
+
 GARBAGE_STRINGS = (
     ("  ", " "),
     ("WORKER'S COMP", "WORKERS COMP"),

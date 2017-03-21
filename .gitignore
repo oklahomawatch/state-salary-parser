@@ -3,11 +3,19 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+.DS_Store
+
 # C extensions
 *.so
 
 # raw data files
-raw_data
+raw_data/
+
+# parsed data files
+parsed_data/
+
+# FIXME files
+fixme/
 
 # parsed data files
 edu-parsed-payroll-data.txt
