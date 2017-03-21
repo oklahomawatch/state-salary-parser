@@ -9,13 +9,16 @@ __pycache__/
 *.so
 
 # raw data files
-raw_data/
+raw_data/*
+!raw_data/.gitkeep
 
 # parsed data files
-parsed_data/
+parsed_data/*
+!parsed_data/.gitkeep
 
 # FIXME files
-fixme/
+fixme/*
+!fixme/.gitkeep
 
 # parsed data files
 edu-parsed-payroll-data.txt
