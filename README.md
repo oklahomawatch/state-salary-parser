@@ -11,9 +11,9 @@ Before you begin, you'll need:
 ### Environmental variables
 You'll need these environmental variables to download the raw data.
 
-* *`OK_STATE_FTP_HOST`*: State FTP host
-* *`OK_STATE_FTP_USERNAME`*: State FTP username
-* *`OK_STATE_FTP_PASSWORD`*: State FTP password
+- `OK_STATE_FTP_HOST`: State FTP host
+- `OK_STATE_FTP_USERNAME`: State FTP username
+- `OK_STATE_FTP_PASSWORD`: State FTP password
 
 ## Setup
 Set your environmental variables and clone this repo. Then:
@@ -32,7 +32,7 @@ $ pip install -r requirements.txt
 
 The scripts live in `./parser`:
 
-- `lookups.py`: Lookups to determine which files to target and manage some text processing. You need to set the int variable `FIRST_FISCAL_YEAR` to the first calendar year of the fiscal year for which you need data. For instance, if you are getting data fo FY15-16, you would enter `2015`.
+- `lookups.py`: Lookups to determine which files to target and to manage some text processing. You need to set the int variable `FIRST_FISCAL_YEAR` to the first calendar year of the fiscal year for which you need data. For instance, if you are getting data fo FY15-16, you would enter `2015`.
 - `models.py`: Contains the `PayrollRecord` class we use to help organize the data.
 - `parser.py`: The main script you'll call to kick things off.
 - `utils.py`: The function to download the raw data + some convenience functions.
@@ -43,13 +43,13 @@ The scripts live in `./parser`:
 - Clean, transform and aggregate into something our Django DB can ingest. These files land in `./parsed_data`.
 - Kill and fill the data in Django.
 
-If the parsing script runs into an agency or pay code in the data that's not in the master lists -- or the supplemental lists from `./lookups` -- it writes those files out to `./fixme`. That's when you pick up the phone and call a data specialist over in state payroll.
+If the parsing script runs into an agency or pay code in the data that's not in the master lists -- or the supplemental lists from `./parser/lookups.py` -- it writes those files out to `./fixme`. That's when you pick up the phone and call a data specialist over in state payroll.
 
-## Running the update script
+## Running the script
 Running `$ python parser/parser.py` calls the functions in order.
 
 ## Uploading the files
-At the moment, still a manual process, sorry. Use PHPMyAdmin. The tilde-delimited files created:
+At the moment, this is still a manual process, sorry. Use PHPMyAdmin. The tilde-delimited files created are:
 
 - `edu-agencies-ready-to-upload.txt`
 - `state-agencies-ready-to-upload.txt`
