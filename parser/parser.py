@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from os import listdir
+import os
 import re
 import csv
 
@@ -11,19 +11,33 @@ import utils
 from models import PayrollRecord
 
 
+current_path = os.path.dirname(os.path.abspath(__file__))
+raw_data_dir = os.path.abspath(
+    os.path.join(current_path, os.pardir, 'raw_data'))
+parsed_data_dir = os.path.abspath(
+    os.path.join(current_path, os.pardir, 'parsed_data'))
+fixme_dir = os.path.abspath(os.path.join(current_path, os.pardir, 'fixme'))
+
+
 def parse_payroll_data():
     """Parse payroll files."""
 
     # get a list of agency codes
     agency_codes = utils.get_unique_ids(
-        '../raw_data/agency_list.DAT',
+        os.path.join(
+            raw_data_dir,
+            'agency_list.DAT'
+        ),
         lookups.EXTRA_EDU_AGENCIES,
         3
     ).keys()
 
     # get a list of payroll codes
     payroll_codes = utils.get_unique_ids(
-        '../raw_data/paycode_list.DAT',
+        os.path.join(
+            raw_data_dir,
+            'paycode_list.DAT'
+        ),
         lookups.EXTRA_PAYROLL_CODES,
         4
     ).keys()
@@ -33,7 +47,7 @@ def parse_payroll_data():
     missing_payroll_codes = []
 
     # open output files
-    with open('../parsed_data/state-parsed-payroll-data.txt', 'w') as state_parsed, open('../parsed_data/edu-parsed-payroll-data.txt', 'w') as edu_parsed:  # NOQA
+    with open(os.path.join(parsed_data_dir, 'state-parsed-payroll-data.txt'), 'w') as state_parsed, open(os.path.join(parsed_data_dir, 'edu-parsed-payroll-data.txt'), 'w') as edu_parsed:  # NOQA
 
         # define the field names
         fieldnames = [
@@ -57,7 +71,7 @@ def parse_payroll_data():
         edu_writer.writeheader()
 
         # target the payroll files
-        payroll_files = ['../raw_data/' + x for x in listdir('../raw_data')
+        payroll_files = [x for x in os.listdir(raw_data_dir)
                          if re.search(r'^CALP\d{4}\.DAT$', x)]
 
         # raise an exception if there are no files to parse
@@ -68,7 +82,7 @@ def parse_payroll_data():
         for payroll_file in payroll_files:
             print('        ' + payroll_file)
 
-            with open(payroll_file, 'r') as f:
+            with open(os.path.join(raw_data_dir, payroll_file), 'r') as f:
                 data = f.readlines()
                 for row in data:
                     # create an instance of PayrollRecord class
@@ -111,12 +125,12 @@ def parse_payroll_data():
     # log missing agency/pay records to file
     # (follow up on these with state data folks)
     if len(missing_agency_codes) > 0:
-        with open('../fixme/missing-agency-codes.txt', 'w') as missing_a:
+        with open(os.path.join(fixme_dir, 'missing-agency-codes.txt'), 'w') as missing_a:  # NOQA
             for code in missing_agency_codes:
                 missing_a.write(code + '\n')
 
     if len(missing_payroll_codes) > 0:
-        with open('../fixme/missing-payroll-codes.txt', 'w') as missing_p:
+        with open(os.path.join(fixme_dir, 'missing-payroll-codes.txt'), 'w') as missing_p:  # NOQA
             for code in missing_payroll_codes:
                 missing_p.write(code + '\n')
 
@@ -124,21 +138,25 @@ def parse_payroll_data():
 def aggregate_payroll_data():
     """Roll through master salary files, group & aggregate."""
 
-    state_out = open('../parsed_data/state-personnel-ready-to-upload.txt', 'w')  # NOQA
-    edu_out = open('../parsed_data/edu-personnel-ready-to-upload.txt', 'w')
-    state_agency_out = open('../parsed_data/state-agencies-ready-to-upload.txt', 'w')   # NOQA
-    edu_agency_out = open('../parsed_data/edu-agencies-ready-to-upload.txt', 'w')  # NOQA
+    state_out = open(os.path.join(parsed_data_dir, 'state-personnel-ready-to-upload.txt'), 'w')  # NOQA
+    edu_out = open(os.path.join(parsed_data_dir, 'edu-personnel-ready-to-upload.txt'), 'w')  # NOQA
+    state_agency_out = open(os.path.join(parsed_data_dir, 'state-agencies-ready-to-upload.txt'), 'w')   # NOQA
+    edu_agency_out = open(os.path.join(parsed_data_dir, 'edu-agencies-ready-to-upload.txt'), 'w')  # NOQA
 
     # get a list of agency codes
     agency_codes = utils.get_unique_ids(
-        '../raw_data/agency_list.DAT',
+        os.path.join(
+            raw_data_dir,
+            'agency_list.DAT'),
         lookups.EXTRA_EDU_AGENCIES,
         3
     )
 
     # get a list of payroll codes
     payroll_codes = utils.get_unique_ids(
-        '../raw_data/paycode_list.DAT',
+        os.path.join(
+            raw_data_dir,
+            'paycode_list.DAT'),
         lookups.EXTRA_PAYROLL_CODES,
         4
     )
@@ -177,7 +195,7 @@ def aggregate_payroll_data():
     # `keep_default_na=False` needed to handle
     # literal names like NULL and NA
     dataframes = {
-        'state': pd.read_csv('../parsed_data/state-parsed-payroll-data.txt',
+        'state': pd.read_csv(os.path.join(parsed_data_dir, 'state-parsed-payroll-data.txt'),  # NOQA
                              dtype={
                                 'last': object,
                                 'rest': object,
@@ -187,7 +205,7 @@ def aggregate_payroll_data():
                              },
                              keep_default_na=False),
 
-        'higher-ed': pd.read_csv('../parsed_data/edu-parsed-payroll-data.txt',
+        'higher-ed': pd.read_csv(os.path.join(parsed_data_dir, 'edu-parsed-payroll-data.txt'),  # NOQA
                                  dtype={
                                     'last': object,
                                     'rest': object,

@@ -1,11 +1,15 @@
 from __future__ import print_function
 
 from datetime import date
-from os import environ, listdir
+import os
 from ftplib import FTP
 import re
 
 from lookups import FIRST_FISCAL_YEAR, GARBAGE_STRINGS
+
+current_path = os.path.dirname(os.path.abspath(__file__))
+raw_data_dir = os.path.abspath(
+    os.path.join(current_path, os.pardir, 'raw_data'))
 
 
 def get_date_obj(d):
@@ -33,9 +37,9 @@ def download_payroll_data():
     """Download payroll and lookup files."""
 
     # connect to the FTP server
-    ftp = FTP(environ['OK_STATE_FTP_HOST'],
-              environ['OK_STATE_FTP_USERNAME'],
-              environ['OK_STATE_FTP_PASSWORD'])
+    ftp = FTP(os.environ['OK_STATE_FTP_HOST'],
+              os.environ['OK_STATE_FTP_USERNAME'],
+              os.environ['OK_STATE_FTP_PASSWORD'])
 
     # get a list of the files
     files = ftp.nlst()
@@ -56,16 +60,16 @@ def download_payroll_data():
     # loop over that list, downloading each file
     # ... checking first to see if it already exists
     for file in payroll_files:
-        if file not in listdir('../raw_data'):
+        if file not in os.listdir(raw_data_dir):
             print('            ' + file)
             ftp.retrbinary('RETR ' + file,
-                           open('../raw_data/' + file, 'wb').write)
+                           open(os.path.join(raw_data_dir, file), 'wb').write)
 
     # download the lookup files
     ftp.retrbinary('RETR AGCYINFO.DAT',
-                   open('../raw_data/agency_list.DAT', 'wb').write)
+                   open(os.path.join(raw_data_dir, 'agency_list.DAT'), 'wb').write)  # NOQA
     ftp.retrbinary('RETR OBJCTCD.DAT',
-                   open('../raw_data/paycode_list.DAT', 'wb').write)
+                   open(os.path.join(raw_data_dir, 'paycode_list.DAT'), 'wb').write)  # NOQA
 
     # disconnect
     ftp.quit()
