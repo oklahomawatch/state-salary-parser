@@ -82,7 +82,7 @@ def parse_payroll_data():
         for payroll_file in payroll_files:
             print('        ' + payroll_file)
 
-            with open(os.path.join(raw_data_dir, payroll_file), 'r') as f:
+            with open(os.path.join(raw_data_dir, payroll_file), 'r', encoding='latin-1') as f:  # NOQA
                 data = f.readlines()
                 for row in data:
                     # create an instance of PayrollRecord class
