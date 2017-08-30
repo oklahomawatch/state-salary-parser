@@ -191,33 +191,29 @@ def aggregate_payroll_data():
                                 quotechar='"',
                                 quoting=csv.QUOTE_NONNUMERIC)
 
+    # column data types
+    dt = {'last': object,
+          'rest': object,
+          'agency_id': object,
+          'pay_code': object,
+          'job_code': object}
+
     # create dataframes from parsed csvs
     # `keep_default_na=False` needed to handle
     # literal names like NULL and NA
     dataframes = {
         'state': pd.read_csv(os.path.join(parsed_data_dir, 'state-parsed-payroll-data.txt'),  # NOQA
-                             dtype={
-                                'last': object,
-                                'rest': object,
-                                'agency_id': object,
-                                'pay_code': object,
-                                'job_code': object
-                             },
+                             dtype=dt,
                              keep_default_na=False),
 
         'higher-ed': pd.read_csv(os.path.join(parsed_data_dir, 'edu-parsed-payroll-data.txt'),  # NOQA
-                                 dtype={
-                                    'last': object,
-                                    'rest': object,
-                                    'agency_id': object,
-                                    'pay_code': object,
-                                    'job_code': object
-                                 },
+                                 dtype=dt,
                                  keep_default_na=False),
     }
 
     # loop over each dataframe
     for df in dataframes:
+
         print('working on ' + df + ' personnel records ...')
 
         # group by name slug
@@ -262,6 +258,7 @@ def aggregate_payroll_data():
         print('working on ' + df + ' agency records ...')
 
         agency_file_dict = {}
+
         for k, v in dataframes[df].groupby(['agency_id', 'pay_code']):
             agency_id = k[0]
             agency = agency_codes.get(agency_id, None)
@@ -276,10 +273,11 @@ def aggregate_payroll_data():
                 agency_file_dict[agency_id]['payroll'].append(payroll_str)
                 agency_file_dict[agency_id]['total'] += total_pay
             else:
-                agency_file_dict[agency_id] = {}
-                agency_file_dict[agency_id]['name'] = agency
-                agency_file_dict[agency_id]['total'] = 0.0
-                agency_file_dict[agency_id]['payroll'] = []
+                agency_file_dict[agency_id] = {
+                    'name': agency,
+                    'total': total_pay,
+                    'payroll': [payroll_str]
+                }
 
         for agency in agency_file_dict:
             outlist = [
